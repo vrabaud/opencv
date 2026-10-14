@@ -101,6 +101,54 @@ TEST(Core_SaturateCast, FloatToIntSaturation)
     EXPECT_EQ(UINT64_MAX, saturate_cast<uint64>(bfloat(1e30f))); EXPECT_EQ(0u, saturate_cast<uint64>(bfloat(-1e30f)));
 }
 
+template<typename F>
+static void checkSaturateCastNaN(F nan_val)
+{
+    EXPECT_EQ(0, saturate_cast<uchar>(nan_val));
+    EXPECT_EQ(0, saturate_cast<schar>(nan_val));
+    EXPECT_EQ(0, saturate_cast<ushort>(nan_val));
+    EXPECT_EQ(0, saturate_cast<short>(nan_val));
+    EXPECT_EQ(0, saturate_cast<int>(nan_val));
+    EXPECT_EQ(0u, saturate_cast<unsigned>(nan_val));
+    EXPECT_EQ(0, saturate_cast<int64>(nan_val));
+    EXPECT_EQ(0u, saturate_cast<uint64>(nan_val));
+    EXPECT_FALSE(saturate_cast<bool>(nan_val));
+}
+
+TEST(Core_SaturateCast, NaNToInt)
+{
+    const float qnan_f = std::numeric_limits<float>::quiet_NaN();
+    const float snan_f = std::numeric_limits<float>::signaling_NaN();
+    const double qnan_d = std::numeric_limits<double>::quiet_NaN();
+    const double snan_d = std::numeric_limits<double>::signaling_NaN();
+
+    checkSaturateCastNaN(qnan_f);
+    checkSaturateCastNaN(-qnan_f);
+    checkSaturateCastNaN(snan_f);
+    checkSaturateCastNaN(-snan_f);
+
+    checkSaturateCastNaN(qnan_d);
+    checkSaturateCastNaN(-qnan_d);
+    checkSaturateCastNaN(snan_d);
+    checkSaturateCastNaN(-snan_d);
+
+    checkSaturateCastNaN(hfloat(qnan_f));
+    checkSaturateCastNaN(hfloat(-qnan_f));
+    checkSaturateCastNaN(bfloat(qnan_f));
+    checkSaturateCastNaN(bfloat(-qnan_f));
+
+    checkSaturateCastNaN(fp8_t(qnan_f));
+    checkSaturateCastNaN(fp8_t(-qnan_f));
+    checkSaturateCastNaN(fp8a_t(qnan_f));
+    checkSaturateCastNaN(fp8a_t(-qnan_f));
+
+    // Floating-point destinations should preserve NaN
+    EXPECT_TRUE(cvIsNaN(saturate_cast<float>(qnan_f)));
+    EXPECT_TRUE(cvIsNaN(saturate_cast<double>(qnan_d)));
+    EXPECT_TRUE(cvIsNaN(saturate_cast<float>(qnan_d)));
+    EXPECT_TRUE(cvIsNaN(saturate_cast<double>(qnan_f)));
+}
+
 TEST(Core_SaturateCast, RoundHalfToEven)
 {
     // all the integer targets use the same round-half-to-even rule (cvRound/cvRound64)
